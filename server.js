@@ -10,8 +10,11 @@ const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
         origin: "*",
-        methods: ["GET", "POST"]
-    }
+        methods: ["GET", "POST"],
+        credentials: true
+    },
+    allowEIO3: true, // Compatibilidad con versiones de motor extendidas
+    transports: ['polling', 'websocket'] // IMPORTANTE: Polling primero para asegurar el Handshake en Render
 });
 
 const PORT = process.env.PORT || 3000;
