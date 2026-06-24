@@ -39,11 +39,11 @@ const enlacesNotificados = {};
 const ENLACES = [
     { piloto: "589013", amie: "07H01109", ip: "186.46.7.178", nombre: "CEI 15 DE OCTUBRE" },
     { piloto: "21114", amie: "07H01044", ip: "186.46.7.78", nombre: "CEI CRUZ GARCÍA CAJAMARCA" },
+    { piloto: "17885", amie: "07H01153", ip: "186.42.171.10", nombre: "EEB EMILIANO VALVERDE" },
     { piloto: "2465522", amie: "07H01155", ip: "186.46.237.106", nombre: "CONSERVATORIO MARÍA DE JESÚS FLORES MENDOZA" },
     { piloto: "10062", amie: "07H01029", ip: "186.46.0.230", nombre: "UE DRA. AMADA SEGARRA ORELLANA" },
     { piloto: "2353615", amie: "07H01031", ip: "181.196.62.66", nombre: "UE ANTONIO JOSE DE SUCRE" },
     { piloto: "751333", amie: "07H01032", ip: "181.196.62.70", nombre: "UE SANTA ROSA" },
-    { piloto: "17885", amie: "07H01153", ip: "186.42.171.10", nombre: "ESCUELA DE EDUCACIÓN BÁSICA EMILIANO VALVERDE" },
     { piloto: "2445687", amie: "07H01034", ip: "186.42.215.18", nombre: "UE DAVID DE JESUS TORRES APOLO" },
     { piloto: "431013", amie: "07H01035", ip: "186.42.119.186", nombre: "UE SIMÓN BOLÍVAR" },
     { piloto: "2645543", amie: "07H01036", ip: "190.214.45.190", nombre: "UE DR ALFREDO PEREZ GUERRERO" },
@@ -74,7 +74,7 @@ const ENLACES = [
     { piloto: "760864", amie: "07H01106", ip: "181.196.59.186", nombre: "UE DEMETRIO AGUILERA MALTA" },
     { piloto: "558876", amie: "07H01110", ip: "190.11.26.70", nombre: "UE ALEJANDRO AGUILAR LOZANO" },
     { piloto: "2129395", amie: "07H01112", ip: "186.46.94.162", nombre: "UE ROSA AURORA GARCIA" },
-    { piloto: "21112", amie: "07H01121", ip: "186.46.7.74", nombre: "UE JULIO LORENZO BETANCOURT CAILLAGUA" },
+    { piloto: "21112", amie: "07H01121", ip: "186.46.7.74", nombre: "UE JULIO LORENZO BETANCOURT" },
     { piloto: "2645537", amie: "07H01125", ip: "181.211.244.214", nombre: "UE ORIENTE ECUATORIANO" },
     { piloto: "2074510", amie: "07H01126", ip: "181.113.7.206", nombre: "UE DR. NAPOLEON MERA" },
     { piloto: "54839", amie: "07H01139", ip: "181.196.150.246", nombre: "UE JOSE ANTONIO JARA" },
@@ -119,29 +119,45 @@ function enviarCorreoAlerta(enlace) {
 }
 
 function verificarEnlace(enlace) {
-    return new Promise((resolve) => {
+    return new Promise(async (resolve) => {
         const inicio = Date.now();
-        const socket = net.createConnection({ host: enlace.ip, port: 80, timeout: 2500 });
+        // Lista de puertos estándar que suelen responder o rechazar explícitamente en ruteadores WAN
+        const puertosAProbar = [80, 443, 22, 23]; 
+        
+        for (const puerto of puertosAProbar) {
+            const exito = await new Promise((resPuerto) => {
+                const socket = net.createConnection({ host: enlace.ip, port: puerto, timeout: 1500 });
 
-        socket.on('connect', () => {
-            const ms = Date.now() - inicio;
-            socket.end();
-            resolve({ alive: true, time: `${ms} ms` });
-        });
+                socket.on('connect', () => {
+                    socket.end();
+                    resPuerto(true);
+                });
 
-        socket.on('error', (err) => {
-            const ms = Date.now() - inicio;
-            if (err.code === 'ECONNREFUSED') {
-                resolve({ alive: true, time: `${ms} ms` });
-            } else {
-                resolve({ alive: false, time: 'N/A' });
+                socket.on('error', (err) => {
+                    // Si el ruteador rechaza la conexión de forma activa (ECONNREFUSED o EHOSTUNREACH),
+                    // significa con certeza absoluta que el equipo está ENCENDIDO y respondiendo en red.
+                    if (err.code === 'ECONNREFUSED' || err.code === 'EHOSTUNREACH') {
+                        resPuerto(true);
+                    } else {
+                        resPuerto(false);
+                    }
+                });
+
+                socket.on('timeout', () => {
+                    socket.destroy();
+                    resPuerto(false);
+                });
+            });
+
+            // Si el puerto respondió o dio señales de vida, terminamos la prueba para esta IP
+            if (exito) {
+                const ms = Date.now() - inicio;
+                return resolve({ alive: true, time: `${ms} ms` });
             }
-        });
+        }
 
-        socket.on('timeout', () => {
-            socket.destroy();
-            resolve({ alive: false, time: 'N/A' });
-        });
+        // Si todos los puertos dieron timeout, la IP está caída realmente
+        resolve({ alive: false, time: 'N/A' });
     });
 }
 
