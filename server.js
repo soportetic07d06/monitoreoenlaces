@@ -120,43 +120,37 @@ function enviarCorreoAlerta(enlace) {
 
 function verificarEnlace(enlace) {
     return new Promise(async (resolve) => {
-        const inicio = Date.now();
-        // Lista de puertos estándar que suelen responder o rechazar explícitamente en ruteadores WAN
         const puertosAProbar = [80, 443, 22, 23]; 
         
         for (const puerto of puertosAProbar) {
+            const inicioPuerto = Date.now(); // Cronómetro individual por puerto
             const exito = await new Promise((resPuerto) => {
                 const socket = net.createConnection({ host: enlace.ip, port: puerto, timeout: 1500 });
 
                 socket.on('connect', () => {
                     socket.end();
-                    resPuerto(true);
+                    resPuerto({ ok: true, ms: Date.now() - inicioPuerto });
                 });
 
                 socket.on('error', (err) => {
-                    // Si el ruteador rechaza la conexión de forma activa (ECONNREFUSED o EHOSTUNREACH),
-                    // significa con certeza absoluta que el equipo está ENCENDIDO y respondiendo en red.
                     if (err.code === 'ECONNREFUSED' || err.code === 'EHOSTUNREACH') {
-                        resPuerto(true);
+                        resPuerto({ ok: true, ms: Date.now() - inicioPuerto });
                     } else {
-                        resPuerto(false);
+                        resPuerto({ ok: false });
                     }
                 });
 
                 socket.on('timeout', () => {
                     socket.destroy();
-                    resPuerto(false);
+                    resPuerto({ ok: false });
                 });
             });
 
-            // Si el puerto respondió o dio señales de vida, terminamos la prueba para esta IP
-            if (exito) {
-                const ms = Date.now() - inicio;
-                return resolve({ alive: true, time: `${ms} ms` });
+            if (exito.ok) {
+                // Devolvemos la latencia real del puerto que respondió, descartando los timeouts anteriores
+                return resolve({ alive: true, time: `${exito.ms} ms` });
             }
         }
-
-        // Si todos los puertos dieron timeout, la IP está caída realmente
         resolve({ alive: false, time: 'N/A' });
     });
 }
