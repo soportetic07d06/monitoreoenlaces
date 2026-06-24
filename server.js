@@ -3,7 +3,7 @@ const http = require('http');
 const { Server } = require('socket.io');
 const path = require('path');
 const nodemailer = require('nodemailer');
-const net = require('net'); // Usaremos sockets TCP ordinarios, permitidos en Render
+const net = require('net');
 
 const app = express();
 const server = http.createServer(app);
@@ -11,7 +11,7 @@ const io = new Server(server);
 
 const PORT = process.env.PORT || 3000;
 
-// CONFIGURACIÓN DEL CORREO
+// CONFIGURACIÓN DEL CORREO (Recuerda cambiar tus credenciales aquí)
 const CONFIG_CORREO = {
     usuario: 'soportetic.07d06@gmail.com',       // Tu correo emisor
     claveApp: 'bshdczqtwzsrheay',      // La contraseña de 16 letras de Google
@@ -33,14 +33,14 @@ const ENLACES = [
     { piloto: "21114", amie: "07H01044", ip: "186.46.7.78", nombre: "CENTRO DE EDUCACIÓN INICIAL CRUZ GARCÍA CAJAMARCA" },
     { piloto: "10062", amie: "07H01029", ip: "186.46.0.230", nombre: "UNIDAD EDUCATIVA DRA. AMADA SEGARRA ORELLANA" },
     { piloto: "2353615", amie: "07H01031", ip: "181.196.62.66", nombre: "UNIDAD EDUCATIVA ANTONIO JOSE DE SUCRE" },
-    { piloto: "2465522", amie: "07H01155", ip: "186.46.237.106", nombre: "CONSERVATORIO MARÍA DE JESÚS FLORES MENDOZA" }, // Corregido AMIE según imagen
+    { piloto: "2465522", amie: "07H01155", ip: "186.46.237.106", nombre: "CONSERVATORIO MARÍA DE JESÚS FLORES MENDOZA" },
     { piloto: "751333", amie: "07H01032", ip: "181.196.62.70", nombre: "UNIDAD EDUCATIVA SANTA ROSA" },
     { piloto: "17885", amie: "07H01153", ip: "186.42.171.10", nombre: "ESCUELA DE EDUCACIÓN BÁSICA EMILIANO VALVERDE" },
     { piloto: "2445687", amie: "07H01034", ip: "186.42.215.18", nombre: "UNIDAD EDUCATIVA DAVID DE JESUS TORRES APOLO" },
     { piloto: "431013", amie: "07H01035", ip: "186.42.119.186", nombre: "UNIDAD EDUCATIVA SIMÓN BOLÍVAR" },
-    { piloto: "2645543", amie: "07H01036", ip: "190.214.45.190", nombre: "UNIDAD EDUCATIVA DR ALFREDO PEREZ GUERRERO" },
+    { piloto: "2645543", amie: "07H01036", ip: "190.214.45.190", module: "UNIDAD EDUCATIVA DR ALFREDO PEREZ GUERRERO", nombre: "UNIDAD EDUCATIVA DR ALFREDO PEREZ GUERRERO" },
     { piloto: "22379", amie: "07H01039", ip: "186.42.99.110", nombre: "UNIDAD EDUCATIVA JOSÉ MARÍA OLLAGUE PAREDES" },
-    { piloto: "421090", amie: "07H01045", ip: "181.112.190.222", node: "UNIDAD EDUCATIVA GAUDENCIO VITE ORTEGA", nombre: "UNIDAD EDUCATIVA GAUDENCIO VITE ORTEGA" },
+    { piloto: "421090", amie: "07H01045", ip: "181.112.190.222", nombre: "UNIDAD EDUCATIVA GAUDENCIO VITE ORTEGA" },
     { piloto: "753913", amie: "07H01046", ip: "181.196.59.198", nombre: "UNIDAD EDUCATIVA MODESTO CHÁVEZ FRANCO" },
     { piloto: "238381", amie: "07H01050", ip: "190.152.4.202", nombre: "UNIDAD EDUCATIVA PATRICIA CHERREZ DE PESANTES" },
     { piloto: "597898", amie: "07H01053", ip: "186.47.76.202", nombre: "UNIDAD EDUCATIVA ALIDA VALAREZO DE SANCHEZ" },
@@ -75,13 +75,12 @@ const ENLACES = [
     { piloto: "251577", amie: "07H01151", ip: "190.214.50.10", nombre: "UNIDAD EDUCATIVA DR. MODESTO CHÁVEZ FRANCO" },
     { piloto: "500077", amie: "07H01154", ip: "186.46.128.122", nombre: "UNIDAD EDUCATIVA LCDO. FAUSTO MOLINA MOLINA" },
     { piloto: "2645536", amie: "07H01169", ip: "190.214.13.114", nombre: "UNIDAD EDUCATIVA ROSA DE LUXEMBURGO" },
-    { piloto: "433758", amie: "07H01304", ip: "181.112.190.218", nombre: "UNIDAD EDUCATIVA WALTER LAINEZ MARTÍNEZ" } // Corregido AMIE según imagen
+    { piloto: "433758", amie: "07H01304", ip: "181.112.190.218", nombre: "UNIDAD EDUCATIVA WALTER LAINEZ MARTÍNEZ" }
 ];
 
 app.use(express.static(path.join(__dirname, 'public')));
 
 function esHorarioAlerta() {
-    // Render usa la hora del servidor (UTC). Restamos 5 horas para tener la hora de Ecuador de forma exacta
     const ahora = new Date();
     const horaEcuador = (ahora.getUTCHours() - 5 + 24) % 24;
     return horaEcuador >= 7 && horaEcuador < 15;
@@ -111,11 +110,9 @@ function enviarCorreoAlerta(enlace) {
     });
 }
 
-// Comprobación TCP (Soporta bloqueo en la nube)
 function verificarEnlace(enlace) {
     return new Promise((resolve) => {
         const inicio = Date.now();
-        // Intentamos conectar al puerto 80 (HTTP estándar). Si responde o rechaza, la IP está viva.
         const socket = net.createConnection({ host: enlace.ip, port: 80, timeout: 2500 });
 
         socket.on('connect', () => {
@@ -125,7 +122,6 @@ function verificarEnlace(enlace) {
         });
 
         socket.on('error', (err) => {
-            // En ruteadores públicos, un rechazo de conexión (ECONNREFUSED) también significa que el host está OPERATIVO
             const ms = Date.now() - inicio;
             if (err.code === 'ECONNREFUSED') {
                 resolve({ alive: true, time: `${ms} ms` });
