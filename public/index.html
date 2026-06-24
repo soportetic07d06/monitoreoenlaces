@@ -25,7 +25,9 @@
     </div>
 
     <script>
-        const socket = io(https://monitoreoenlaces07d06.onrender.com);
+        const socket = io('https://tu-proyecto.onrender.com', {
+              transports: ['websocket', 'polling']
+        });
         const contenedor = document.getElementById('contenedor-enlaces');
         const contador = document.getElementById('contador');
         const enlacesData = {};
