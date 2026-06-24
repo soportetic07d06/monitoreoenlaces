@@ -25,9 +25,12 @@
     </div>
 
     <script>
-        const socket = io('https://tu-proyecto.onrender.com', {
-              transports: ['websocket', 'polling']
+        const socket = io('https://monitoreoenlaces07d06.onrender.com/', {
+            transports: ['polling', 'websocket'], // Iniciamos con polling para cruzar el proxy de Render y luego escala solo
+            upgrade: true,
+            rememberUpgrade: true
         });
+        
         const contenedor = document.getElementById('contenedor-enlaces');
         const contador = document.getElementById('contador');
         const enlacesData = {};
