@@ -1,117 +1,36 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Monitor de Conectividad Educativa</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <script src="/socket.io/socket.io.js"></script>
-</head>
-<body class="bg-slate-900 text-slate-100 min-h-screen font-sans">
+<div class="bg-slate-950 border border-emerald-500/30 rounded-xl p-4 shadow-[0_0_15px_rgba(16,185,129,0.1)] relative overflow-hidden backdrop-blur-md">
+  
+  <div class="absolute inset-0 bg-gradient-to-b from-transparent via-emerald-500/5 to-transparent animate-pulse pointer-events-none"></div>
 
-    <div class="container mx-auto px-4 py-6">
-        <header class="mb-6 border-b border-slate-700 pb-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-            <div>
-                <h1 class="text-2xl md:text-3xl font-bold text-cyan-400">📡 Monitoreo de Enlaces - Instituciones Educativas</h1>
-                <p class="text-sm text-slate-400 mt-1">Verificación en tiempo real de operatividad mediante IP Pública</p>
-            </div>
-            <div id="contador" class="bg-slate-800 px-4 py-2 rounded-lg border border-slate-700 text-sm font-semibold text-slate-300">
-                Cargando instituciones...
-            </div>
-        </header>
+  <div class="flex justify-between items-start mb-3 border-b border-slate-800 pb-2">
+    <div>
+      <h3 class="text-emerald-400 font-mono text-sm tracking-wider font-bold uppercase">
+        [NOMBRE DE INSTITUCIÓN EDUCATIVA]
+      </h3>
+      <p class="text-xs text-slate-400 font-mono mt-0.5">AMIE: <span class="text-cyan-400">07H00XXX</span></p>
+    </div>
+    <span class="px-2 py-0.5 bg-cyan-950 border border-cyan-500/40 text-[10px] text-cyan-400 font-mono rounded tracking-widest font-bold">
+      PILOTO
+    </span>
+  </div>
 
-        <div id="contenedor-enlaces" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-            </div>
+  <div class="grid grid-cols-1 md:grid-cols-3 gap-3 items-center">
+    <div class="flex items-center justify-between bg-slate-900/50 p-2.5 rounded-lg border border-slate-800">
+      <div class="flex items-center gap-2">
+        <span class="relative flex h-3 w-3">
+          <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+          <span class="relative inline-flex rounded-full h-3 w-3 bg-emerald-500"></span>
+        </span>
+        <span class="text-emerald-400 font-mono text-xs font-bold tracking-widest">ONLINE</span>
+      </div>
+      <div class="text-right">
+        <span class="text-[10px] text-slate-500 block font-mono">LATENCIA</span>
+        <span class="text-emerald-400 font-mono text-sm font-bold">14 ms</span>
+      </div>
     </div>
 
-    <script>
-        const socket = io('https://monitoreoenlaces07d06.onrender.com/', {
-            transports: ['polling', 'websocket'], // Iniciamos con polling para cruzar el proxy de Render y luego escala solo
-            upgrade: true,
-            rememberUpgrade: true
-        });
-        
-        const contenedor = document.getElementById('contenedor-enlaces');
-        const contador = document.getElementById('contador');
-        const enlacesData = {};
-
-       /* socket.on('actualizacion-enlace', (data) => {
-            enlacesData[data.ip] = data;
-            renderizarEnlaces();
-        });*/
-
-        socket.on('actualizacion-enlace', (data) => {
-    // Busca el contenedor de la tarjeta por su AMIE o IP
-    const tarjeta = document.getElementById(`tarjeta-${data.amie}`);
-    
-    if (tarjeta) {
-        // Renderizamos la latencia y sumamos los contadores dinámicos de red en la parte inferior
-        tarjeta.innerHTML = `
-            <div class="p-4 bg-slate-800 rounded-lg shadow-md border ${data.alive ? 'border-green-500' : 'border-red-500'}">
-                <div class="flex justify-between items-center mb-2">
-                    <span class="text-xs font-bold text-gray-400">AMIE: ${data.amie}</span>
-                    <span class="px-2 py-0.5 text-xs font-extrabold rounded ${data.alive ? 'bg-green-900 text-green-300' : 'bg-red-900 text-red-300'}">
-                        ${data.alive ? 'ONLINE' : 'OFFLINE'}
-                    </span>
-                </div>
-                <h3 class="text-white font-bold text-sm h-10 overflow-hidden mb-2">${data.nombre}</h3>
-                <div class="text-xs text-gray-300 space-y-1">
-                    <p><strong>IP PÚBLICA:</strong> <span class="text-cyan-400">${data.ip}</span></p>
-                    <p><strong>Latencia:</strong> <span class="${data.alive ? 'text-green-400' : 'text-gray-500'}">${data.time}</span></p>
-                    
-                    <div class="mt-3 pt-2 border-t border-slate-700 flex justify-between text-gray-400 font-mono">
-                        <span>📥 Descarga: <b class="text-white">${data.down}</b></span>
-                        <span>📤 Subida: <b class="text-white">${data.up}</b></span>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
-});
-
-        // hasta aqui de grafica
-
-        function renderizarEnlaces() {
-            contenedor.innerHTML = '';
-            const lista = Object.values(enlacesData);
-            
-            // Contadores de estados
-            const onlineCount = lista.filter(e => e.estado === 'Online').length;
-            contador.innerHTML = `Total: ${lista.length} | <span class="text-emerald-400">Online: ${onlineCount}</span> | <span class="text-rose-400">Offline: ${lista.length - onlineCount}</span>`;
-
-            lista.forEach(enlace => {
-                const esOnline = enlace.estado === 'Online';
-                const badgeColor = esOnline ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30' : 'bg-rose-500/20 text-rose-400 border-rose-500/30';
-                const borderColor = esOnline ? 'border-emerald-500/20 hover:border-emerald-500/40' : 'border-rose-500/20 hover:border-rose-500/40';
-                
-                const tarjetaHtml = `
-                    <div class="bg-slate-800 border ${borderColor} rounded-lg p-4 shadow-md transition-all flex flex-col justify-between">
-                        <div>
-                            <div class="flex justify-between items-start gap-2 mb-2">
-                                <span class="text-xs font-mono bg-slate-700 px-2 py-0.5 rounded text-slate-300">AMIE: ${enlace.amie}</span>
-                                <span class="px-2 py-0.5 rounded border text-[10px] font-bold tracking-wider uppercase ${badgeColor}">
-                                    ${enlace.estado}
-                                </span>
-                            </div>
-                            
-                            <h3 class="text-sm font-bold text-white line-clamp-2 min-h-[40px]" title="${enlace.nombre}">
-                                IE: <span class="font-medium text-slate-300">${enlace.nombre}</span>
-                            </h3>
-                        </div>
-
-                        <div class="mt-3 pt-3 border-t border-slate-700/60 text-xs space-y-1 text-slate-400">
-                            <div><strong>PILOTO:</strong> <span class="font-mono text-slate-200">${enlace.piloto}</span></div>
-                            <div><strong>IP PUBLICA:</strong> <span class="font-mono text-cyan-400 font-semibold">${enlace.ip}</span></div>
-                            <div class="flex justify-between text-[11px] pt-1 text-slate-500">
-                                <span>Latencia: <span class="${esOnline ? 'text-emerald-400' : 'text-slate-500'} font-semibold">${enlace.tiempo}</span></span>
-                                <span>${enlace.actualizado}</span>
-                            </div>
-                        </div>
-                    </div>
-                `;
-                contenedor.innerHTML += tarjetaHtml;
-            });
-        }
-    </script>
-</body>
-</html>
+    <div class="md:col-span-2 border border-slate-800 bg-black/40 rounded-lg p-1 overflow-hidden">
+      <img src="/api/cacti-graph?graph_id=2609643" alt="Cacti Realtime Traffic" class="w-full h-auto object-cover opacity-90 hover:opacity-100 transition-opacity" />
+    </div>
+  </div>
+</div>
