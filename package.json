@@ -1,7 +1,7 @@
 {
-  "name": "noc-cacti-monitoring-dashboard",
-  "version": "1.0.0",
-  "description": "Plataforma de monitoreo automatizada responsiva para Render",
+  "name": "noc-cacti-monitoring-dashboard-updated-v3",
+  "version": "1.3.0",
+  "description": "Plataforma de monitoreo automatizada responsiva con IPs Publicas para Render",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
