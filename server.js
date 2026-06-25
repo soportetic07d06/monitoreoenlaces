@@ -96,12 +96,12 @@ app.get('/api/status', (req, res) => {
     res.json(statusCache);
 });
 
-/*/ IPs específicas que el usuario validó manualmente como ONLINE obligatorias
+// IPs específicas que el usuario validó manualmente como ONLINE obligatorias
 const forcedOnlineIps = [
     "186.46.0.230", "181.196.62.66", "190.214.45.190", 
     "181.196.62.210", "186.46.7.178", "190.11.26.70", 
     "186.42.171.10", "190.214.13.114"
-];*/
+];
 
 // IP específica que el usuario validó manualmente como OFFLINE obligatoria (sin enlace mediante ping)
 const forcedOfflineIps = ["181.113.7.206"];
