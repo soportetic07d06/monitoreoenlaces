@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NOC Dashboard - Monitoreo de Enlaces</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Share+Tech+Mono&family=Orbitron:wght@400;700&display=swap');
+        body {
+            font-family: 'Share Tech Mono', monospace;
+            background-color: #050811;
+        }
+        .title-font {
+            font-family: 'Orbitron', sans-serif;
+        }
+        /* Custom Neon Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #050811; }
+        ::-webkit-scrollbar-thumb { background: #14b8a6; border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: #10b981; }
+    </style>
+</head>
+<body class="text-slate-300 min-h-screen flex flex-col bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-slate-900 via-purple-950/20 to-black">
+
+    <!-- TOP HEADER BAR -->
+    <header class="border-b border-cyan-500/20 bg-slate-950/80 backdrop-blur-md sticky top-0 z-50 px-4 py-3 shadow-[0_4px_30px_rgba(0,255,255,0.05)]">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-3">
+            <div class="flex items-center gap-3">
+                <div class="relative flex h-3 w-3">
+                    <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
+                    <span class="relative inline-flex rounded-full h-3 w-3 bg-cyan-500"></span>
+                </div>
+                <h1 class="title-font text-xl md:text-2xl font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-teal-400 to-emerald-400 uppercase">
+                    NOC GLOBAL - DISTRICT 07D06
+                </h1>
+            </div>
+            
+            <!-- VIEW METRICS METADATA -->
+            <div class="flex items-center gap-4 text-xs font-mono bg-slate-900/90 px-3 py-1.5 rounded border border-slate-800">
+                <div>DISPOSITIVO: <span id="device-badge" class="text-cyan-400 font-bold">DETECTANDO...</span></div>
+                <div class="hidden sm:block text-slate-600">|</div>
+                <div>TOTAL ENLACES: <span id="total-badge" class="text-teal-400 font-bold">0</span></div>
+            </div>
+        </div>
+    </header>
+
+    <!-- MAIN CONTAINER -->
+    <main class="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6">
+        
+        <!-- CONTROL BAR (SEARCH & MODE DISPLAY) -->
+        <div class="mb-6 flex flex-col sm:flex-row gap-4 justify-between items-stretch sm:items-center bg-slate-950/40 p-4 rounded-xl border border-slate-800 backdrop-blur-sm">
+            <div class="relative flex-1 max-w-md">
+                <span class="absolute inset-y-0 left-0 pl-3 flex items-center text-slate-500">
+                    <i class="fa-solid fa-microchip animate-pulse text-cyan-500"></i>
+                </span>
+                <input type="text" id="search-input" placeholder="BUSCAR POR INSTITUCIÓN, AMIE O ID..." 
+                    class="w-full bg-black/60 border border-slate-700 rounded-lg pl-10 pr-4 py-2 text-sm font-mono tracking-wider focus:outline-none focus:border-cyan-500 focus:ring-1 focus:ring-cyan-500 transition-all text-cyan-300 placeholder-slate-600 uppercase">
+            </div>
+            <div class="flex items-center justify-between sm:justify-end gap-3">
+                <span class="text-xs text-slate-400 uppercase tracking-widest">Vista Aplicada:</span>
+                <span id="view-mode-indicator" class="px-3 py-1 bg-purple-950/50 border border-purple-500/30 text-purple-400 text-xs font-bold rounded tracking-wider">
+                    -
+                </span>
+            </div>
+        </div>
+
+        <!-- TELEMETRY CARDS CONTAINER -->
+        <div id="grid-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Dynamic Cards inject here -->
+        </div>
+
+        <!-- PAGINATION FOR MOBILE VIEW -->
+        <div id="pagination-controls" class="hidden mt-8 flex justify-center items-center gap-4">
+            <button id="prev-btn" class="px-4 py-2 bg-slate-900 hover:bg-cyan-950 border border-slate-800 hover:border-cyan-500/50 rounded-lg text-cyan-400 font-bold text-xs tracking-widest disabled:opacity-30 disabled:pointer-events-none transition-all duration-300 uppercase">
+                <i class="fa-solid fa-backward-step mr-2"></i> ANTERIOR
+            </button>
+            <span class="text-xs tracking-widest text-slate-400 font-mono">
+                PÁGINA <span id="current-page" class="text-cyan-400 font-bold">1</span> DE <span id="total-pages" class="text-slate-400">1</span>
+            </span>
+            <button id="next-btn" class="px-4 py-2 bg-slate-900 hover:bg-cyan-950 border border-slate-800 hover:border-cyan-500/50 rounded-lg text-cyan-400 font-bold text-xs tracking-widest disabled:opacity-30 disabled:pointer-events-none transition-all duration-300 uppercase">
+                SIGUIENTE <i class="fa-solid fa-forward-step ml-2"></i>
+            </button>
+        </div>
+    </main>
+
+    <!-- FOOTER STATUS BAR -->
+    <footer class="border-t border-slate-900 bg-black/80 px-4 py-3 mt-12 text-center text-[11px] font-mono tracking-widest text-slate-500">
+        SYSTEM CLOUD GATEWAY: <span class="text-emerald-500 font-bold">ACTIVE</span> // CACTI INTEGRATION ENGINE v1.2.0 // FASTBOY NETWORKS
+    </footer>
+
+    <!-- INTERACTIVE ENGINE SCRIPT -->
+    <script>
+        // Master Data Array embedded natively
+        const dataset = [{"amie": "07H01109", "name": "CEI 15 DE OCTUBRE", "piloto": "589013", "velocidad": "40MB", "graph_id": "71244"}, {"amie": "07H01044", "name": "CEI CRUZ GARCÍA CAJAMARCA", "piloto": "21114", "velocidad": "40MB", "graph_id": "67423"}, {"amie": "07H01058", "name": "UEE MANUEL BENJAMÍN PESANTES VALAREZO", "piloto": "2465524", "velocidad": "40MB", "graph_id": "71238"}, {"amie": "07H01550", "name": "CONSERVATORIO MARÍA DE JESÚS FLORES MENDOZA", "piloto": "2465522", "velocidad": "40MB", "graph_id": "71236"}, {"amie": "07H01153", "name": "EEB EMILIANO VALVERDE", "piloto": "17885", "velocidad": "40MB", "graph_id": "57015"}, {"amie": "07H01141", "name": "UE 13 DE ABRIL", "piloto": "2407473", "velocidad": "40MB", "graph_id": "65424"}, {"amie": "07H01100", "name": "UE ABDÓN CALDERÓN MUÑOZ", "piloto": "431660", "velocidad": "50MB", "graph_id": "59862"}, {"amie": "07H01110", "name": "UE ALEJANDRO AGUILAR LOZANO", "piloto": "558876", "velocidad": "40MB", "graph_id": "60840"}, {"amie": "07H01053", "name": "UE ALIDA VALAREZO DE SANCHEZ", "piloto": "597898", "velocidad": "40MB", "graph_id": "67409"}, {"amie": "07H01031", "name": "UE ANTONIO JOSE DE SUCRE", "piloto": "2353615", "velocidad": "70MB", "graph_id": "71235"}, {"amie": "07H01147", "name": "UE CARLOS ZAMBRANO OREJUELA", "piloto": "2552736", "velocidad": "50MB", "graph_id": "21596"}, {"amie": "07H01097", "name": "UE CIUDAD DE SANTA ROSA", "piloto": "706370", "velocidad": "40MB", "graph_id": "67406"}, {"amie": "07H01096", "name": "UE CRNEL. FÉLIX VEGA DÁVILA", "piloto": "757614", "velocidad": "70MB", "graph_id": "71245"}, {"amie": "07H01034", "name": "UE DAVID DE JESUS TORRES APOLO", "piloto": "2445687", "velocidad": "40MB", "graph_id": "57378"}, {"amie": "07H01106", "name": "UE DEMETRIO AGUILERA MALTA", "piloto": "760864", "velocidad": "2F 55X25 MB", "graph_id": "48567"}, {"amie": "07H01036", "name": "UE DR ALFREDO PEREZ GUERRERO", "piloto": "2645543", "velocidad": "70MB", "graph_id": "59895"}, {"amie": "07H01151", "name": "UE DR. MODESTO CHÁVEZ FRANCO", "piloto": "251577", "velocidad": "40MB", "graph_id": "67559"}, {"amie": "07H01126", "name": "UE DR. NAPOLEON MERA", "piloto": "2074510", "velocidad": "40MB", "graph_id": "56171"}, {"amie": "07H01029", "name": "UE DRA. AMADA SEGARRA ORELLANA", "piloto": "10062", "velocidad": "40MB", "graph_id": "48051"}, {"amie": "07H01062", "name": "UE EUGENIO ESPEJO", "piloto": "2645538", "velocidad": "40MB", "graph_id": "71247"}, {"amie": "07H01095", "name": "UE FRANCO EGIDIO ARIAS", "piloto": "10066", "velocidad": "40MB", "graph_id": "67405"}, {"amie": "07H01045", "name": "UE GAUDENCIO VITE ORTEGA", "piloto": "421090", "velocidad": "40MB", "graph_id": "48341"}, {"amie": "07H01091", "name": "UE GENERAL ALCIDES PESANTES VILLACIS", "piloto": "755348", "velocidad": "40MB", "graph_id": "71239"}, {"amie": "07H01105", "name": "UE GUILLERMINA UNDA DE GARCIA", "piloto": "589013", "velocidad": "40MB", "graph_id": "67407"}, {"amie": "07H01081", "name": "UE JACINTO GRANDA PAREDES", "piloto": "439876", "velocidad": "50MB", "graph_id": "48148"}, {"amie": "07H01079", "name": "UE JAMBELI", "piloto": "19727", "velocidad": "2F 55X25 MB", "graph_id": "67411"}, {"amie": "07H01054", "name": "UE JAVIER SOTO", "piloto": "22166", "velocidad": "40MB", "graph_id": "67416"}, {"amie": "07H01070", "name": "UE JORGE ENRIQUE CHAVEZ CELI", "piloto": "430740", "velocidad": "70MB", "graph_id": "20804"}, {"amie": "07H01139", "name": "UE JOSE ANTONIO JARA", "piloto": "54839", "velocidad": "40MB", "graph_id": "65423"}, {"amie": "07H01039", "name": "UE JOSÉ MARÍA OLLAGUE PAREDES", "piloto": "22379", "velocidad": "40MB", "graph_id": "71277"}, {"amie": "07H01121", "name": "UE JULIO LORENZO BETANCOURT CAILLAGUA", "piloto": "21112", "velocidad": "40MB", "graph_id": "71319"}, {"amie": "07H01094", "name": "UE LASTENIA PESANTES DE NIETO", "piloto": "262487", "velocidad": "40MB", "graph_id": "71243"}, {"amie": "07H01154", "name": "UE LCDO. FAUSTO MOLINA MOLINA", "piloto": "500077", "velocidad": "40MB", "graph_id": "61642"}, {"amie": "07H01077", "name": "UE MANUEL UTRERAS GOMEZ", "piloto": "751883", "velocidad": "40MB", "graph_id": "71248"}, {"amie": "07H01080", "name": "UE MARÍA DEL CARMEN GAVILANES TENEZACA", "piloto": "753512", "velocidad": "40MB", "graph_id": "48553"}, {"amie": "07H01046", "name": "UE MODESTO CHAVEZ FRANCO", "piloto": "753913", "velocidad": "40MB", "graph_id": "71242"}, {"amie": "07H01125", "name": "UE ORIENTE ECUATORIANO", "piloto": "2645537", "velocidad": "50MB", "graph_id": "60805"}, {"amie": "07H01050", "name": "UE PATRICIA CHERREZ DE PESANTES", "piloto": "238381", "velocidad": "40MB", "graph_id": "61348"}, {"amie": "07H01098", "name": "UE PROF. ENRIQUE SUAREZ PIMENTEL", "piloto": "755400", "velocidad": "40MB", "graph_id": "71237"}, {"amie": "07H01099", "name": "UE PROF. FABIÁN ESPINOZA SÁNCHEZ", "piloto": "420391", "velocidad": "40MB", "graph_id": "48263"}, {"amie": "07H01083", "name": "UE PROVINCIA DE IMABURA", "piloto": "754762", "velocidad": "40MB", "graph_id": "71226"}, {"amie": "07H01112", "name": "UE ROSA AURORA GARCIA", "piloto": "2129395", "velocidad": "40MB", "graph_id": "67404"}, {"amie": "07H01169", "name": "UE ROSA DE LUXEMBURGO", "piloto": "2645536", "velocidad": "50MB", "graph_id": "56997"}, {"amie": "07H01032", "name": "UE SANTA ROSA", "piloto": "751333", "velocidad": "40MB", "graph_id": "73241"}, {"amie": "07H01035", "name": "UE SIMÓN BOLÍVAR", "piloto": "431013", "whites": "50MB", "velocidad": "50MB", "graph_id": "59591"}, {"amie": "07H01304", "name": "UE WALTER LAINEZ MARTÍNEZ", "piloto": "433758", "velocidad": "40MB", "graph_id": "59592"}, {"amie": "07H01068", "name": "UE ZOILA UGARTE DE LANDIVAR", "piloto": "244966", "velocidad": "80MB", "graph_id": "71222"}];
+
+        // Application State Variables
+        let filteredData = [...dataset];
+        let currentPage = 1;
+        const itemsPerPageMobile = 5;
+        let isMobile = false;
+
+        // Element Selectors
+        const gridContainer = document.getElementById('grid-container');
+        const searchInput = document.getElementById('search-input');
+        const deviceBadge = document.getElementById('device-badge');
+        const totalBadge = document.getElementById('total-badge');
+        const viewModeIndicator = document.getElementById('view-mode-indicator');
+        const paginationControls = document.getElementById('pagination-controls');
+        const prevBtn = document.getElementById('prev-btn');
+        const nextBtn = document.getElementById('next-btn');
+        const currentPageSpan = document.getElementById('current-page');
+        const totalPagesSpan = document.getElementById('total-pages');
+
+        // Detect Responsive View Mode Configuration
+        function checkViewport() {
+            const width = window.innerWidth;
+            const previousMode = isMobile;
+            isMobile = width < 768; // Mobile breakout point
+            
+            if(isMobile) {
+                deviceBadge.innerHTML = '<i class="fa-solid fa-mobile-screen mr-1 text-purple-400"></i> CELULAR';
+                viewModeIndicator.textContent = 'PAGINADO (MAX 5)';
+                viewModeIndicator.className = "px-3 py-1 bg-purple-950/50 border border-purple-500/40 text-purple-400 text-xs font-bold rounded tracking-wider shadow-[0_0_10px_rgba(168,85,247,0.1)]";
+                paginationControls.classList.remove('hidden');
+            } else {
+                deviceBadge.innerHTML = '<i class="fa-solid fa-desktop mr-1 text-cyan-400"></i> COMPUTADORA';
+                viewModeIndicator.textContent = 'PANORÁMICO (TODOS)';
+                viewModeIndicator.className = "px-3 py-1 bg-cyan-950/50 border border-cyan-500/40 text-cyan-400 text-xs font-bold rounded tracking-wider shadow-[0_0_10px_rgba(6,182,212,0.1)]";
+                paginationControls.classList.add('hidden');
+            }
+
+            // If mode switched, reset page index to avoid rendering gaps
+            if (previousMode !== isMobile) {
+                currentPage = 1;
+                renderDashboard();
+            }
+        }
+
+        // Render Cards Matrix Layout
+        function renderDashboard() {
+            gridContainer.innerHTML = '';
+            totalBadge.textContent = filteredData.length;
+
+            if (filteredData.length === 0) {
+                gridContainer.innerHTML = `
+                    <div class="col-span-full text-center py-12 border border-dashed border-red-500/20 bg-red-950/10 rounded-xl p-8">
+                        <i class="fa-solid fa-triangle-exclamation text-red-500 text-3xl mb-3 animate-bounce"></i>
+                        <p class="text-red-400 font-bold tracking-widest text-sm uppercase">Sin registros coincidentes en la matriz</p>
+                    </div>`;
+                return;
+            }
+
+            let dataToRender = filteredData;
+            
+            // Apply mobile truncation if screen constraint matches
+            if (isMobile) {
+                const totalPages = Math.ceil(filteredData.length / itemsPerPageMobile);
+                totalPagesSpan.textContent = totalPages;
+                currentPageSpan.textContent = currentPage;
+
+                // Clamp current page index boundaries safely
+                if (currentPage > totalPages) currentPage = totalPages || 1;
+                
+                const startIndex = (currentPage - 1) * itemsPerPageMobile;
+                dataToRender = filteredData.slice(startIndex, startIndex + itemsPerPageMobile);
+
+                // Setup Pagination buttons availability states
+                prevBtn.disabled = currentPage === 1;
+                nextBtn.disabled = currentPage === totalPages;
+            }
+
+            // Build out Card Components Loops
+            dataToRender.forEach((item, index) => {
+                // Generate simulated stable latency & status values to build out visualization demo mockup
+                // The real production site will map this dynamically to backend status responses
+                const mockIsOnline = (parseInt(item.graph_id) % 7 !== 0); 
+                const mockLatency = mockIsOnline ? Math.floor(10 + (parseInt(item.graph_id) % 35)) + " ms" : "—";
+                
+                const statusColorClass = mockIsOnline ? "emerald" : "red";
+                const statusLabel = mockIsOnline ? "ONLINE" : "OFFLINE";
+
+                const cardHtml = `
+                    <div class="bg-slate-950/80 border border-${statusColorClass}-500/20 rounded-xl p-4 shadow-[0_0_20px_rgba(0,0,0,0.5)] hover:shadow-[0_0_25px_rgba(${mockIsOnline ? '16,185,129' : '239,68,68'},0.15)] transition-all duration-300 relative overflow-hidden flex flex-col justify-between group">
+                        
+                        <!-- High Tech Grid Scan line -->
+                        <div class="absolute inset-0 bg-gradient-to-b from-transparent via-${statusColorClass}-500/5 to-transparent opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity duration-700 animate-pulse"></div>
+
+                        <!-- Card Header telemetry block -->
+                        <div>
+                            <div class="flex justify-between items-start mb-3 border-b border-slate-900 pb-2">
+                                <div class="max-w-[70%]">
+                                    <h3 class="text-slate-200 font-bold text-sm tracking-wider uppercase truncate title-font group-hover:text-${statusColorClass}-400 transition-colors" title="${item.name}">
+                                        ${item.name}
+                                    </h3>
+                                    <p class="text-[11px] text-slate-500 font-mono mt-0.5">AMIE: <span class="text-cyan-400">${item.amie}</span></p>
+                                </div>
+                                <div class="text-right">
+                                    <span class="px-2 py-0.5 bg-slate-900 border border-slate-800 text-[9px] text-slate-400 font-bold rounded tracking-wider block mb-1">
+                                        ANCHO: ${item.velocidad}
+                                    </span>
+                                    <span class="px-2 py-0.5 bg-cyan-950/50 border border-cyan-500/30 text-[9px] text-cyan-400 font-bold rounded tracking-widest block">
+                                        PILOTO: ${item.piloto}
+                                    </span>
+                                </div>
+                            </div>
+
+                            <!-- Realtime Status Indicators bar -->
+                            <div class="flex items-center justify-between bg-black/40 p-2 rounded-lg border border-slate-900 mb-3">
+                                <div class="flex items-center gap-2">
+                                    <span class="relative flex h-2.5 w-2.5">
+                                        <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-${statusColorClass}-400 opacity-75"></span>
+                                        <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-${statusColorClass}-500"></span>
+                                    </span>
+                                    <span class="text-${statusColorClass}-400 font-bold text-xs tracking-widest">${statusLabel}</span>
+                                </div>
+                                <div class="text-right flex items-center gap-2">
+                                    <span class="text-[10px] text-slate-600 block tracking-widest">LATENCIA:</span>
+                                    <span class="text-${statusColorClass}-400 font-bold text-xs font-mono">${mockLatency}</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Live Graph Render Engine box -->
+                        <div class="mt-auto pt-2 border-t border-slate-900/50">
+                            <div class="text-[9px] text-slate-600 mb-1 flex justify-between tracking-widest">
+                                <span>CACTI LIVE GRAPH STRIP</span>
+                                <span class="text-slate-500">ID: ${item.graph_id}</span>
+                            </div>
+                            <div class="border border-slate-900 bg-black/90 rounded-lg overflow-hidden p-1 relative min-h-[110px] flex items-center justify-center">
+                                <!-- Source routes requests securely through the app session proxy server -->
+                                <img src="/api/cacti-graph?graph_id=${item.graph_id}" 
+                                     alt="Telemetría Cacti Enlace" 
+                                     class="w-full h-auto object-cover opacity-80 group-hover:opacity-100 transition-opacity duration-300"
+                                     onerror="this.onerror=null; this.src='https://placehold.co/400x160/020617/14b8a6?text=ID+${item.graph_id}+-+Cacti+Stream';">
+                            </div>
+                        </div>
+
+                    </div>
+                `;
+                gridContainer.insertAdjacentHTML('beforeend', cardHtml);
+            });
+        }
+
+        // Active Search Event Filter Handler
+        searchInput.addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase().trim();
+            filteredData = dataset.filter(item => 
+                item.name.toLowerCase().includes(query) || 
+                item.amie.toLowerCase().includes(query) ||
+                item.graph_id.includes(query) ||
+                item.piloto.includes(query)
+            );
+            currentPage = 1; // Reset window view back to top page index
+            renderDashboard();
+        });
+
+        // Pagination buttons action click behaviors
+        prevBtn.addEventListener('click', () => {
+            if (currentPage > 1) {
+                currentPage--;
+                renderDashboard();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        });
+
+        nextBtn.addEventListener('click', () => {
+            const totalPages = Math.ceil(filteredData.length / itemsPerPageMobile);
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderDashboard();
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+            }
+        });
+
+        // Initialize Responsive Listeners Engines
+        window.addEventListener('resize', checkViewport);
+        
+        // Initial Startup Trigger Execution
+        checkViewport();
+        renderDashboard();
+    </script>
+</body>
+</html>
