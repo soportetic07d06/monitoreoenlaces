@@ -1,7 +1,7 @@
 {
-  "name": "centro-operaciones-red-07d06-minedec",
-  "version": "3.0.0",
-  "description": "Panel de Monitoreo de Conectividad en tiempo real simplificado para 47 enlaces del MINEDEC",
+  "name": "centro-operaciones-red-07d06-minedec-full",
+  "version": "4.0.0",
+  "description": "Sistema Completo de Monitoreo y Operaciones de Red - Distrito 07D06 MINEDEC",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
