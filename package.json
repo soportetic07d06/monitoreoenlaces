@@ -1,15 +1,12 @@
 {
-  "name": "noc-cacti-monitoring-dashboard-production-v5",
-  "version": "2.1.0",
-  "description": "Plataforma NOC en tiempo real con auditoria de Ping ICMP nativa y sesion unificada de Cacti",
+  "name": "centro-operaciones-red-07d06-minedec",
+  "version": "3.0.0",
+  "description": "Panel de Monitoreo de Conectividad en tiempo real simplificado para 47 enlaces del MINEDEC",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
   },
   "dependencies": {
-    "express": "^4.19.2",
-    "axios": "^1.7.2",
-    "axios-cookiejar-support": "^5.0.2",
-    "tough-cookie": "^4.1.4"
+    "express": "^4.19.2"
   }
 }
