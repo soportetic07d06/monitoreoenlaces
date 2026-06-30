@@ -1,0 +1,4 @@
+body{background:#07121f;color:white;font-family:Arial}
+.card{display:inline-block;padding:15px;margin:10px;background:#10253c;border-radius:8px}
+table{width:100%;border-collapse:collapse}
+td,th{border:1px solid #355;padding:8px}
